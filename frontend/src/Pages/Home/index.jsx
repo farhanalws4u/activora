@@ -2,10 +2,14 @@ import React, { useState } from "react";
 import Navbar from "../../components/Navbar";
 
 import ClipLoader from "react-spinners/ClipLoader";
+import axios from "axios";
 
 function Home() {
   const [isLoading, setIsLoading] = useState(false);
-
+      console.log(
+        "Authorization Header:",
+        axios.defaults.headers.common["Authorization"]
+      );
 
   return (
     <div>

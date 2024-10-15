@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { FaGoogle } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import ClipLoader from "react-spinners/ClipLoader";
-import { json, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import { signIn } from "../../api/auth";
-import axios from 'axios'
+
 
 function Login() {
   const navigate = useNavigate();
@@ -28,8 +28,6 @@ function Login() {
      if(res.data.message === 'success'){
       let token = res.data.token;
       localStorage.setItem("token",token);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
       navigate('/')
      }
    } catch (error) {

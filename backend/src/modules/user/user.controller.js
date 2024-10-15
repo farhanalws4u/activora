@@ -3,7 +3,7 @@ import { AppError } from "../../utils/AppError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import { userModel } from "../../../Database/models/user.model.js";
-import bcrypt from "bcrypt";
+import {getUserFieldsFromToken} from "../../utils/getUserFieldsFromToken.js";
 
 const addUser = catchAsyncError(async (req, res, next) => {
   const addUser = new userModel(req.body);
@@ -36,6 +36,21 @@ const updateUser = catchAsyncError(async (req, res, next) => {
   !updateUser && next(new AppError("User was not found", 404));
 });
 
+const getCurrentUser = catchAsyncError(async (req, res, next) => {
+  try {
+    const { id } = getUserFieldsFromToken(req, ["id"]); 
+   const foundUser = await userModel.findById(id);
+
+   if (foundUser) {
+     return res.status(200).json({ message: "success", foundUser });
+   } else {
+     return next(new AppError("User not found", 404));
+   }
+ } catch (error) {
+   next(error);
+ }
+});
+
 const changeUserPassword = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   req.body.passwordChangedAt = Date.now();
@@ -49,6 +64,14 @@ const changeUserPassword = catchAsyncError(async (req, res, next) => {
 
   !changeUserPassword && next(new AppError("User was not found", 404));
 });
+
 const deleteUser = deleteOne(userModel, "user");
 
-export { addUser, getAllUsers, updateUser, deleteUser, changeUserPassword };
+export {
+  addUser,
+  getAllUsers,
+  updateUser,
+  deleteUser,
+  changeUserPassword,
+  getCurrentUser,
+};

@@ -6,10 +6,21 @@ import ProtectedRoute from "./components/protectedRoute";
 import Projects from "./Pages/Projects/Projects";
 import Tracker from "./Pages/Tracker/Tracker";
 import Tasks from "./Pages/Tasks/Tasks";
+import { useEffect } from "react";
 
 function App() {
   let token = localStorage.getItem("token");
   let isAuthenticated = token ? true : false;
+
+  useEffect(() => {
+    if (!token && window.location.pathname !== "/login")
+      window.location.href = "/login";
+  }, [localStorage]);
+
+   useEffect(() => {
+     if (token && window.location.pathname === "/login")
+       window.location.href = "/";
+   }, []);
 
   return (
     <BrowserRouter>

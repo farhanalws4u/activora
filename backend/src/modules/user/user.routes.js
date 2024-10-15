@@ -13,12 +13,15 @@ const userRouter = express.Router();
 userRouter
   .route("/")
   .post(validate(addUserValidation), User.addUser)
-  .get(User.getAllUsers);
+  .get(User.getAllUsers)
+
+userRouter.route("/me").get(User.getCurrentUser);
 
 userRouter
   .route("/:id")
   .put(validate(updateUserValidation), User.updateUser)
   .delete(validate(deleteUserValidation), User.deleteUser)
-  .patch(validate(changeUserPasswordValidation), User.changeUserPassword);
+  .patch(validate(changeUserPasswordValidation), User.changeUserPassword)
+  
 
 export default userRouter;
