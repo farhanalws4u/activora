@@ -1,0 +1,31 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "outDir": "./dist/electron",
+    "sourceMap": true,
+    "declaration": false,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es5",
+    "jsx": "preserve",
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "noEmit": true,
+    "paths": {
+      "@config/*": ["config/*"],
+      "@renderer/*": ["src/renderer/*"]
+    },
+    "typeRoots": ["node_modules/@types", "customTypes/*"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+  },
+  "include": ["src/**/*", "customTypes/**/*", "config/**/*", ".electron-vite"],
+}
