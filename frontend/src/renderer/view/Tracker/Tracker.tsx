@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getAllProjects } from '../../api/project';
 import { getCurrentUser } from '../../api/user';
 import { addActivity } from '../../api/activity';
+import { useTheme } from '@mui/material/styles';
+import { Box, Button, Select, MenuItem, Typography, CircularProgress, Modal } from '@mui/material';
 
 interface Project {
   _id: string;
@@ -10,12 +12,17 @@ interface Project {
 
 interface AlertData {
   projectName: string;
-  totalActiveTime: { hours: number; minutes: number; seconds: number };
+  totalActiveTime: {
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
   percentageActivity: number;
   screenshots: string[];
 }
 
-const Tracker = () => {
+const Tracker: React.FC = () => {
+  const theme = useTheme();
   const [isTracking, setIsTracking] = useState<boolean>(false);
   const [mouseActivity, setMouseActivity] = useState<{ x: number; y: number; timestamp: Date }[]>([]);
   const [keyboardActivity, setKeyboardActivity] = useState<string[]>([]);
@@ -26,95 +33,71 @@ const Tracker = () => {
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [lastActivityTime, setLastActivityTime] = useState<Date | null>(null);
   const [alertData, setAlertData] = useState<AlertData | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [stopTrackingLoading, setStopTrackingLoading] = useState<boolean>(false);
 
-  const interval = 2000; // Screenshot capture interval
+  const interval = 2000;
 
-  // Fetch projects and user info on initial render
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await getAllProjects();
-        setProjects(response.data.projects);
+        const [projectsResponse, userResponse] = await Promise.all([getAllProjects(), getCurrentUser(localStorage.getItem('token') || '')]);
+        setProjects(projectsResponse.data.projects);
+        setUserId(userResponse.data.foundUser._id);
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    const fetchUserInfo = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await getCurrentUser(token);
-          setUserId(response.data.foundUser._id);
-        }
-      } catch (error) {
-        console.error('Error fetching user info:', error);
-      }
-    };
-
-    fetchProjects();
-    fetchUserInfo();
+    fetchData();
   }, []);
 
-  // Activity tracking effect
-useEffect(() => {
-  if (!isTracking) return;
+  // Activity tracking effect remains the same as your original code
+  useEffect(() => {
+    if (!isTracking) return;
 
-  // Track mouse movement
-  const handleMouseMove = (e: MouseEvent) => {
-    setMouseActivity((prev) => [
-      ...prev,
-      {
-        x: e.screenX,
-        y: e.screenY,
-        timestamp: new Date(),
-      },
-    ]);
-    setLastActivityTime(new Date());
-  };
+    const handleMouseMove = (e: MouseEvent) => {
+      setMouseActivity((prev) => [...prev, { x: e.screenX, y: e.screenY, timestamp: new Date() }]);
+      setLastActivityTime(new Date());
+    };
 
-  // Track keyboard activity
-  const handleKeyPress = (e: KeyboardEvent) => {
-    setKeyboardActivity((prev) => [...prev, e.key]);
-    setLastActivityTime(new Date());
-  };
+    const handleKeyPress = (e: KeyboardEvent) => {
+      setKeyboardActivity((prev) => [...prev, e.key]);
+      setLastActivityTime(new Date());
+    };
 
-  // Screenshot capture function
-const captureScreenshot = async () => {
-  try {
-    const sources = await window.electronAPI.captureScreenshot();
-    if (sources && sources.length > 0) {
-      const screenshot = sources[0].dataURL;
-      setScreenshots((prev) => [...prev, screenshot]);
-    }
-  } catch (error) {
-    console.error('Screenshot capture error:', error);
-  }
-};
+    const captureScreenshot = async () => {
+      try {
+        const sources = await window.electronAPI.captureScreenshot();
+        if (sources && sources.length > 0) {
+          setScreenshots((prev) => [...prev, sources[0].dataURL]);
+        }
+      } catch (error) {
+        console.error('Screenshot capture error:', error);
+      }
+    };
 
-  // Add event listeners
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('keydown', handleKeyPress);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('keydown', handleKeyPress);
 
-  // Set up intervals
-  const screenshotInterval = setInterval(captureScreenshot, interval);
-  const durationInterval = setInterval(() => {
-    setActiveDuration((prev) => prev + 1000);
-  }, 1000);
+    const screenshotInterval = setInterval(captureScreenshot, interval);
+    const durationInterval = setInterval(() => {
+      setActiveDuration((prev) => prev + 1000);
+    }, 1000);
 
-  // Cleanup function
-  return () => {
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('keydown', handleKeyPress);
-    clearInterval(screenshotInterval);
-    clearInterval(durationInterval);
-  };
-}, [isTracking, interval]);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('keydown', handleKeyPress);
+      clearInterval(screenshotInterval);
+      clearInterval(durationInterval);
+    };
+  }, [isTracking]);
 
-  // Start tracking function
+  // Your helper functions remain the same
   const startTracking = async () => {
     if (!projectId) return;
-
     setIsTracking(true);
     setMouseActivity([]);
     setKeyboardActivity([]);
@@ -123,13 +106,29 @@ const captureScreenshot = async () => {
     setLastActivityTime(new Date());
   };
 
-  // Stop tracking function
-  const stopTracking = async () => {
-    setIsTracking(false);
+const stopTracking = async () => {
+  setStopTrackingLoading(true);
+  setIsTracking(false);
+  try {
     await saveMouseAndKeyboardActivity();
+  } finally {
+    setStopTrackingLoading(false);
+  }
+};
+
+  // Other helper functions remain the same
+  const calculatePercentageActivity = (): number => {
+    if (activeDuration === 0 || mouseActivity.length === 0) return 0;
+    const totalTrackedIntervals = Math.floor(activeDuration / interval) * (interval / 1000);
+    return Math.min((activeDuration / totalTrackedIntervals) * (100 / interval), 100);
   };
 
-  // Save mouse and keyboard activity data
+  const formatTime = (totalSeconds: number) => ({
+    hours: Math.floor(totalSeconds / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  });
+
   const saveMouseAndKeyboardActivity = async (): Promise<void> => {
     try {
       const percentageActivity = calculatePercentageActivity();
@@ -143,21 +142,16 @@ const captureScreenshot = async () => {
         screenshots,
       });
 
-      // Format time for alert
       const totalActiveTimeInSeconds = Math.floor(activeDuration / 1000);
       const formattedTime = formatTime(totalActiveTimeInSeconds);
 
-      // Set alert data
-      const alertMessage: AlertData = {
+      setAlertData({
         projectName: projects.find((project) => project._id === projectId)?.name || 'N/A',
         totalActiveTime: formattedTime,
         percentageActivity,
         screenshots,
-      };
+      });
 
-      setAlertData(alertMessage);
-
-      // Reset activity data
       setMouseActivity([]);
       setKeyboardActivity([]);
       setScreenshots([]);
@@ -166,99 +160,118 @@ const captureScreenshot = async () => {
     }
   };
 
-  // Format time into hours, minutes, and seconds
-  const formatTime = (totalSeconds: number) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    return { hours, minutes, seconds: totalSeconds % 60 };
-  };
-
-  // Calculate percentage of activity based on mouse movements
-  const calculatePercentageActivity = (): number => {
-    if (activeDuration === 0 || mouseActivity.length === 0) return 0;
-
-    const totalTrackedIntervals = Math.floor(activeDuration / interval) * (interval / 1000);
-
-    return Math.min((activeDuration / totalTrackedIntervals) * (100 / interval), 100);
-  };
-
-  // Close alert modal
-  const closeAlert = (): void => {
-    setAlertData(null);
-  };
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 mt-8 bg-white dark:bg-gray-800 shadow-md rounded-lg">
-      <form className="space-y-4">
-        <div>
-          <label htmlFor="project" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Project:
-          </label>
-          <select
-            id="project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="mt-1 block w-full p-3 mb-4 text-gray-900 border border-gray-300 rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="" disabled>
-              Select a project
-            </option>
-            {projects.map((project) => (
-              <option key={project._id} value={project._id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </div>
+    <Box
+      sx={{
+        backgroundColor: theme.palette.background.paper,
+        boxShadow: theme.shadows[1],
+        borderRadius: 3,
+        padding: theme.spacing(3),
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        mt: theme.spacing(4),
+        display: 'flex',
+        flexDirection: 'column',
+        gap: theme.spacing(3),
+      }}
+    >
+      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        Select Project
+      </Typography>
+      <Select value={projectId} onChange={(e) => setProjectId(e.target.value)} displayEmpty fullWidth variant="outlined">
+        <MenuItem value="" disabled>
+          Select a Project
+        </MenuItem>
+        {projects.map((project) => (
+          <MenuItem key={project._id} value={project._id}>
+            {project.name}
+          </MenuItem>
+        ))}
+      </Select>
+      <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>
+        <Button variant="contained" onClick={startTracking} disabled={isTracking || !projectId} fullWidth color="primary">
+          Start Tracking
+        </Button>
+        <Button variant="contained" onClick={stopTracking} disabled={!isTracking} fullWidth color="error">
+          Stop Tracking
+        </Button>
+      </Box>
 
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={startTracking}
-            disabled={isTracking || !projectId}
-            className="w-full p-3 mr-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+      <Modal open={!!alertData} onClose={() => setAlertData(null)} aria-labelledby="activity-summary">
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+            // @ts-ignore 
+            position: 'relative', 
+          }}
+        >
+          <Button
+            onClick={() => setAlertData(null)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+              minWidth: 'auto',
+              padding: '4px',
+            }}
           >
-            Start Tracking
-          </button>
-          <button
-            type="button"
-            onClick={stopTracking}
-            disabled={!isTracking}
-            className="w-full p-3 ml-2 text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200"
-          >
-            Stop Tracking
-          </button>
-        </div>
-      </form>
+            ✕
+          </Button>
 
-      {/* Alert Modal */}
-      {alertData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto relative">
-            <button onClick={closeAlert} className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-xl">
-              &times;
-            </button>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Activity Summary</h3>
-            <p className="text-gray-700 mb-2">
-              <strong>Project Name:</strong> {alertData.projectName}
-            </p>
-            <p className="text-gray-700 mb-2">
-              <strong>Total Time Worked:</strong> {alertData.totalActiveTime.hours}h {alertData.totalActiveTime.minutes}m {alertData.totalActiveTime.seconds}s
-            </p>
-            <p className="text-gray-700 mb-2">
-              <strong>Activity Percentage:</strong> {alertData.percentageActivity.toFixed(2)}%
-            </p>
-
-            <h4 className="text-md font-semibold text-gray-800 mt-4">Screenshots:</h4>
-            <div className="mt-2 max-h-64 overflow-y-auto">
-              {alertData.screenshots.map((screenshot, index) => (
-                <img key={index} src={screenshot} alt={`Screenshot ${index + 1}`} className="w-full h-auto mb-2 rounded shadow" />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          <Typography variant="h6" component="h2" gutterBottom>
+            Activity Summary
+          </Typography>
+          {alertData && (
+            <>
+              <Typography sx={{ mt: 2 }}>
+                <strong>Project Name:</strong> {alertData.projectName}
+              </Typography>
+              <Typography>
+                <strong>Total Time Worked:</strong> {alertData.totalActiveTime.hours}h {alertData.totalActiveTime.minutes}m {alertData.totalActiveTime.seconds}s
+              </Typography>
+              <Typography>
+                <strong>Activity Percentage:</strong> {alertData.percentageActivity.toFixed(2)}%
+              </Typography>
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                Screenshots:
+              </Typography>
+              <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                {alertData.screenshots.map((screenshot, index) => (
+                  <img
+                    key={index}
+                    src={screenshot}
+                    alt={`Screenshot ${index + 1}`}
+                    style={{
+                      width: '100%',
+                      marginBottom: theme.spacing(1),
+                      borderRadius: theme.shape.borderRadius,
+                    }}
+                  />
+                ))}
+              </Box>
+            </>
+          )}
+        </Box>
+      </Modal>
+    </Box>
   );
 };
 
