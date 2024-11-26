@@ -1,27 +1,34 @@
 import express from "express";
-import * as User from "./user.controller.js";
-import { validate } from "../../middlewares/validate.js";
-import {
-  addUserValidation,
-  changeUserPasswordValidation,
-  deleteUserValidation,
-  updateUserValidation,
-} from "./user.validation.js";
+import * as userController from './user.controller.js'
+import { validateFields } from "../../middlewares/validateFields.js";
+import { userValidation } from "../../utils/validationSchemas/userValidations.js";
+import { protect } from "../../middlewares/protect.js";
 
 const userRouter = express.Router();
+userRouter.use(protect);
 
-userRouter
-  .route("/")
-  .post(validate(addUserValidation), User.addUser)
-  .get(User.getAllUsers)
+// User profile routes
+userRouter.get("/profile", userController.getCurrentUser);
+userRouter.put("/profile",
+  validateFields(userValidation.updateProfile),
+  userController.updateProfile
+);
+userRouter.post("/change-password",
+  validateFields(userValidation.changePassword),
+  userController.changePassword
+);
 
-userRouter.route("/me").get(User.getCurrentUser);
-
-userRouter
-  .route("/:id")
-  .put(validate(updateUserValidation), User.updateUser)
-  .delete(validate(deleteUserValidation), User.deleteUser)
-  .patch(validate(changeUserPasswordValidation), User.changeUserPassword)
+// Admin routes
+userRouter.get("/", userController.getAllUsers);
+userRouter.post("/",
+  validateFields(userValidation.addUser),
+  userController.addUser
+);
+userRouter.put("/:id",
+  validateFields(userValidation.updateUser),
+  userController.updateUser
+);
+userRouter.delete("/:id", userController.deleteUser);
   
 
 export default userRouter;
