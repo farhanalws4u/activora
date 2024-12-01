@@ -15,4 +15,16 @@ axios.interceptors.request.use(
   },
 );
 
+// Add response interceptor for handling token expiration
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error) => {
+//     if (error.response.status === 401) {
+//       localStorage.removeItem('token');
+//       // Redirect to login or refresh token
+//     }
+//     return Promise.reject(error);
+//   }
+// );
+
 export default axios;

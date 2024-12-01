@@ -3,12 +3,7 @@ import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
-
-const generateToken = (user) => {
-  return jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "30d",
-  });
-};
+import {generateJwtToken} from '../../utils/generateJwtToken.js'
 
 const getAllUsers = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(userModel.find(), req.query)
@@ -87,7 +82,7 @@ const changePassword = catchAsyncError(async (req, res, next) => {
   user.passwordChangedAt = new Date();
   await user.save();
 
-  const token = generateToken(user);
+  const token = generateJwtToken(user);
   res.status(200).json({ message: "Password updated successfully", token });
 });
 

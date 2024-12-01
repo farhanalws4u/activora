@@ -1,15 +1,9 @@
 import { userModel } from "../../../Database/models/user.model.js";
 import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { generateJwtToken } from "../../utils/generateJwtToken.js";
 
-// Utility Functions
-const generateToken = (user) => {
-  return jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "30d",
-  });
-};
 
 const signUp = catchAsyncError(async (req, res, next) => {
   const isUserExist = await userModel.findOne({ email: req.body.email });
@@ -20,7 +14,7 @@ const signUp = catchAsyncError(async (req, res, next) => {
   const user = new userModel(req.body);
   await user.save();
 
-  const token = generateToken(user);
+  const token = generateJwtToken(user);
   res.status(201).json({ message: "success", user, token });
 });
 
@@ -35,7 +29,7 @@ const signIn = catchAsyncError(async (req, res, next) => {
   user.status = "online";
   await user.updateLastActive();
 
-  const token = generateToken(user);
+  const token = generateJwtToken(user);
   res.status(200).json({ message: "success", token, user });
 });
 
@@ -88,7 +82,7 @@ const resetPassword = catchAsyncError(async (req, res, next) => {
   user.passwordChangedAt = new Date();
   await user.save();
 
-  const newToken = generateToken(user);
+  const newToken = generateJwtToken(user);
   res
     .status(200)
     .json({ message: "Password reset successful", token: newToken });
@@ -100,5 +94,4 @@ export {
   signOut,
   forgotPassword,
   resetPassword,
-  generateToken,
 };

@@ -15,6 +15,16 @@ export function bootstrap(app) {
   app.use("/api/v1/activity", activityRouter);
   app.use("/api/v1/task", taskRouter);
 
+  app.use((err, req, res, next) => {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "error";
+
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+    });
+  });
+
 
   app.all("*", (req, res, next) => {
     next(new AppError("Endpoint was not found", 404));
