@@ -14,3 +14,7 @@ export const signUp = async (data: AuthData): Promise<any> => {
 export const signIn = async (data: AuthData): Promise<any> => {
   return await axios.post(`${url}/api/v1/auth/signin`, data);
 };
+
+export const signOut = async (): Promise<any> => {
+  return await axios.post(`${url}/api/v1/auth/signOut`);
+};

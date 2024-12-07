@@ -4,6 +4,7 @@ import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import { deleteOne } from "../../handlers/factor.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 import {generateJwtToken} from '../../utils/generateJwtToken.js'
+import jwt from 'jsonwebtoken'
 
 const getAllUsers = catchAsyncError(async (req, res, next) => {
   let apiFeature = new ApiFeatures(userModel.find(), req.query)
@@ -20,11 +21,24 @@ const getAllUsers = catchAsyncError(async (req, res, next) => {
 });
 
 const getCurrentUser = catchAsyncError(async (req, res, next) => {
-  const user = await userModel.findById(req.user._id);
-  if (!user) {
-    return next(new AppError("User not found", 404));
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next(new AppError("No token provided", 401));
   }
-  res.status(200).json({ message: "success", user });
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await userModel.findById(decoded.id);
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({ message: "success", user });
+  } catch (error) {
+    return next(new AppError("Invalid token", 401));
+  }
 });
 
 const updateProfile = catchAsyncError(async (req, res, next) => {

@@ -41,7 +41,7 @@ export default function Header({ selectedMenu }: HeaderProps) {
         </Typography.Title>
 
         <Stack direction="row" sx={{ gap: 1 }}>
-          <Search />
+          {/* <Search /> */}
           <MenuButton showBadge aria-label="Open notifications">
             <NotificationsRoundedIcon />
           </MenuButton>

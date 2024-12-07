@@ -16,9 +16,6 @@ const addProject = catchAsyncError(async (req, res, next) => {
 const getAllProjects = catchAsyncError(async (req, res, next) => {
   const projects = await projectModel
     .find()
-    .populate("admin", "name email")
-    .populate("members.user", "name email")
-    .sort("-createdAt");
   res.status(200).json({ message: "success", projects });
 });
 

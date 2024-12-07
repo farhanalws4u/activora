@@ -225,12 +225,6 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 </span>
               </Typography>
             </Box>
-            <Divider>or</Divider>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button fullWidth variant="outlined" onClick={() => navigate('/signup')} startIcon={<GoogleIcon />}>
-                Sign in with Google
-              </Button>
-            </Box>
           </Card>
         </SignInContainer>
       )}

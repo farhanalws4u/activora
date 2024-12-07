@@ -1,12 +1,12 @@
-import axios, { InternalAxiosRequestConfig } from "axios";
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
-axios.defaults.baseURL = "http://localhost:8000";
+axios.defaults.baseURL = 'http://localhost:8000';
 
 axios.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     if (token && config.headers) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
@@ -15,16 +15,19 @@ axios.interceptors.request.use(
   },
 );
 
-// Add response interceptor for handling token expiration
-// api.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     if (error.response.status === 401) {
-//       localStorage.removeItem('token');
-//       // Redirect to login or refresh token
-//     }
-//     return Promise.reject(error);
-//   }
-// );
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.log('token expired.......',error.response.data)
+
+    if (
+      (error.response.data.status === "error" && error.response.data.message === 'Invalid token') ||
+      (error.response.data.status === "error" && error.response.data.message === 'Please log in to access this route')
+    ) {
+      localStorage.removeItem('token');
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default axios;

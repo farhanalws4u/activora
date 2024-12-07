@@ -50,7 +50,6 @@ const mainListItems = [
 ];
 
 const secondaryListItems = [
-  { text: 'Settings', icon: <SettingsRoundedIcon /> },
   { text: 'About', icon: <InfoRoundedIcon /> },
   { text: 'Feedback', icon: <HelpRoundedIcon /> },
 ];
@@ -119,7 +118,7 @@ export default function SideMenu({ setSelectedMenu,selectedMenu }: SideMenuProps
           ))}
         </List>
       </Stack>
-      <CardAlert />
+      {/* <CardAlert /> */}
       <Stack
         direction="row"
         sx={{
